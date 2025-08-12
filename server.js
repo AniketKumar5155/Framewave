@@ -1,16 +1,16 @@
+require('dotenv').config();
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
-const dotenv = require('dotenv');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const notFoundMiddleware = require('./middleware/notFoundMiddleware');
 const errorHandlerMiddleware = require('./middleware/errorHandlerMiddleware');
 const trimmer = require('./utils/trimmer');
 
-dotenv.config();
-
 const { connectRedis } = require('./config/redisClient');
+const e = require('express');
+const { userRoute } = require('./route/userRoute');
 
 const allowedOrigins = [
   'http://localhost:5173',
@@ -49,8 +49,8 @@ async function startServer() {
 
     app.use('/auth', authRoute);
     app.use('/otp', otpRoute);
-
-    app.use(trimmer);
+    app.use('/user', userRoute);
+    // app.use(trimmer);
     app.use(errorHandlerMiddleware);
     app.use(notFoundMiddleware);
 

@@ -35,6 +35,10 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING(255),
         allowNull: true,
       },
+      location: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
       created_at: {
         type: DataTypes.DATE,
         allowNull: false,
@@ -52,6 +56,11 @@ module.exports = (sequelize) => {
       tableName: 'auth_logs',
       underscored: true,
       timestamps: false,
+      indexes: [
+        { fields: ['user_id'] },
+        { fields: ['action'] },
+        { fields: ['created_at'] },
+      ],
     }
   );
 

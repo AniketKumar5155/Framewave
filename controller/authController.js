@@ -1,6 +1,6 @@
 const asyncHandler = require('../middleware/asyncHandlerMiddleware');
 const { signupSchema, loginSchema, verify2FALoginSchema } = require('../validator/authSchema');
-const { signupService, loginService, verify2FALoginService } = require('../service/authService');
+const { signupService, loginService, verify2FALoginService, refreshTokenRotationService } = require('../service/authService');
 const axios = require('axios');
 
 exports.signupController = asyncHandler(async (req, res) => {
@@ -129,4 +129,67 @@ exports.verify2FALoginController = asyncHandler(async (req, res) => {
         user: result.user,
         accessToken: result.accessToken,
     });
+});
+
+
+exports.refreshTokenRotationController = asyncHandler(async (req, res) => {
+
+    let oldRefreshToken = null;
+    const authHeader = decodeURIComponent(req.cookies?.refreshToken);
+    console.log("AUTH HEADER: ",authHeader)
+    if (authHeader) {
+        if (authHeader.startsWith('Bearer ')) {
+            oldRefreshToken = authHeader.split(' ')[1];
+        } else {
+            oldRefreshToken = authHeader;
+        }
+    }
+
+    console.log("oldRefreshToken: ", oldRefreshToken)
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    if (!oldRefreshToken) {
+        return res.status(401).json({
+            success: false,
+            message: 'Refresh token not found',
+        });
+    }
+
+
+    const ip = req.ip;
+    const userAgent = req.get('User-Agent') || 'unknown';
+    let location = 'Unknown';
+
+    try {
+        const geo = await axios.get(`https://ipapi.co/${ip}/json/`);
+        location = `${geo.data.city || 'N/A'}, ${geo.data.region || 'N/A'}, ${geo.data.country_name || 'N/A'}`;
+    } catch (err) {
+        console.error('Geo lookup failed:', err.message);
+    }
+
+    try {
+        const tokens = await refreshTokenRotationService(oldRefreshToken, {
+            ip,
+            userAgent,
+            location,
+        });
+
+        res.cookie('refreshToken', tokens.refreshToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Token refreshed successfully',
+            accessToken: tokens.accessToken,
+        });
+    } catch (error) {
+        res.status(401).json({
+            success: false,
+            message: error.message || 'Failed to refresh token',
+        });
+    }
 });

@@ -1,76 +1,62 @@
-const asyncHandler = require('../middleware/asyncHandlerMiddleware');
-const { sendOtpService, verifyOtpService, send2FAOtpService, verify2FAOtpService } = require('../service/otpService');
+const {
+    sendOtpService,
+    send2FAOtpService,
+    verify2FAOtpService,
+    sendOtpForPasswordReset,
+} = require('../service/otpService');
 const { User } = require('../models');
 const { Op } = require('sequelize');
-const { success } = require('zod');
 
-exports.sendOtpController = asyncHandler(async (req, res) => {
-  const { username, email } = req.body;
+const sendOtpController = async (req, res) => {
+    try {
+        const { username, email } = req.body;
+        await sendOtpService({ username, email });
+        res.status(200).json({ message: 'OTP sent successfully' });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+};
 
-  if (!username || !email) {
-    return res.status(400).json({
-      success: false,
-      message: `Email and username are required`
-    });
-  }
+const send2FAOtpController = async (req, res) => {
+    try {
+        const { identifier } = req.body;
+        const user = await User.findOne({
+            where: { [Op.or]: [{ username: identifier }, { email: identifier }] }
+        });
 
-  await sendOtpService({ username, email });
+        if (!user) throw new Error('User not found');
 
-  return res.status(200).json({
-    success: true,
-    message: 'OTP sent successfully',
-  });
-});
-
-exports.verifyOtpController = asyncHandler(async (req, res) => {
-  const { email, otp } = req.body;
-
-  if (!email || !otp) {
-    return res.status(400).json({ success: false, message: 'Email and OTP are required' });
-  }
-
-  await verifyOtpService({ email, otp });
-
-  return res.status(200).json({
-    success: true,
-    message: `OTP verifified successfully`
-  });
-});
-
-exports.send2FAOtpController = asyncHandler(async (req, res) => {
-  const { identifier, password } = req.body;
-
-  if (!identifier || !password) {
-    return res.status(404).json({
-      success: false,
-      message: `Identifier and Password are required.`
-    })
-  }
-
-  const user = await User.findOne({
-    $or: [{ username: identifier }, { email: identifier }]
-  });
-  if (!user) throw new Error("User not found");
-  await send2FAOtpService({ username: user.username, email: user.email });
+        await send2FAOtpService({ username: user.username, email: user.email });
+        res.status(200).json({ message: '2FA OTP sent successfully' });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+};
 
 
-  return res.status(200).json({
-    success: true,
-    message: `OTP sent successfully`
-  })
-});
+const verify2FAOtpController = async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+        const result = await verify2FAOtpService({ email, otp });
+        res.status(200).json(result);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+};
 
-exports.verify2FAOtpController = asyncHandler(async (req, res) => {
-  const { email, otp } = req.body;
+const sendOtpForPasswordResetController = async (req, res) => {
+    try {
+        const { email } = req.body;
+        await sendOtpForPasswordReset({ email });
+        res.status(200).json({ message: 'Password reset OTP sent successfully' });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+};
 
-  if (!email || !otp) {
-    return res.status(400).json({
-      success: false,
-      message: 'Email and OTP are required'
-    });
-  }
-
-  const result = await verify2FAOtpService({ email, otp });
-  return res.status(200).json(result);
-});
-
+module.exports = {
+    sendOtpController,
+    send2FAOtpController,
+    verify2FAOtpController,
+    sendOtpForPasswordResetController,
+};

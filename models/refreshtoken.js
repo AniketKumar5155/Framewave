@@ -49,6 +49,20 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING,
         allowNull: true,
       },
+
+      rotated_from: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        unique: true,
+      },
+      revoked_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      last_used: {
+        type: DataTypes.DATE,
+        allowNull: false,
+      },
       created_at: {
         type: DataTypes.DATE,
         allowNull: false,
@@ -66,6 +80,12 @@ module.exports = (sequelize) => {
       tableName: 'refresh_tokens',
       underscored: true,
       timestamps: false,
+      indexes: [
+        { fields: ['token'] },
+        { fields: ['user_id'] },
+        { fields: ['is_valid'] },
+        { fields: ['expires_at'] },
+      ],
     }
   );
 

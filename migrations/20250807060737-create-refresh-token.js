@@ -39,6 +39,10 @@ module.exports = {
         type: Sequelize.STRING(255),
         allowNull: true,
       },
+      location: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
       created_at: {
         type: Sequelize.DATE,
         allowNull: false,
@@ -49,7 +53,26 @@ module.exports = {
         allowNull: false,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
       },
+      rotated_from: {
+        type: Sequelize.STRING,
+        allowNull: true,
+        unique: true,
+      },
+      revoked_at: {
+        type: Sequelize.DATE,
+        allowNull: true,
+      },
+      last_used: {
+        type: Sequelize.DATE,
+        allowNull: false,
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
+      }
     });
+
+    await queryInterface.addIndex('refresh_tokens', ['user_id']);
+    await queryInterface.addIndex('refresh_tokens', ['token']);
+    await queryInterface.addIndex('refresh_tokens', ['is_valid']);
+    await queryInterface.addIndex('refresh_tokens', ['expires_at']);
   },
 
   async down(queryInterface) {

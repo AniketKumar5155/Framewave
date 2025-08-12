@@ -2,7 +2,8 @@ const express = require('express');
 const {
     signupController,
     loginController,
-    verify2FALoginController
+    verify2FALoginController,
+    refreshTokenRotationController
 } = require('../controller/authController');
 
 const validateZod = require('../middleware/validateZod');
@@ -37,5 +38,10 @@ authRoute.post(
     // loginRateLimiter,
     verify2FALoginController
 );
+
+authRoute.post(
+    '/refresh',
+    refreshTokenRotationController
+)
 
 module.exports = authRoute;

@@ -44,6 +44,10 @@ module.exports = {
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
       },
     });
+
+    await queryInterface.addIndex('auth_logs', ['user_id']);
+    await queryInterface.addIndex('auth_logs', ['action']);
+    await queryInterface.addIndex('auth_logs', ['created_at']);
   },
 
   async down(queryInterface) {
