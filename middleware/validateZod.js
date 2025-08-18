@@ -9,8 +9,8 @@ const validateZod = (schema) => {
         message: err.message || "Invalid input",
       }));
 
-      console.error("Zod validation error:", error); // 🔍 DEBUG LINE
-
+      console.error("Zod validation error:", error);
+  
       return res.status(400).json({
         success: false,
         message: "Validation failed",

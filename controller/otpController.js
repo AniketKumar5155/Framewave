@@ -9,11 +9,17 @@ const { Op } = require('sequelize');
 
 const sendOtpController = async (req, res) => {
     try {
-        const { username, email } = req.body;
-        await sendOtpService({ username, email });
-        res.status(200).json({ message: 'OTP sent successfully' });
+        const { email } = req.body;
+        await sendOtpService({ email });
+        res.status(200).json({ 
+            success: true,
+            message: 'OTP sent successfully' 
+        });
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        res.status(400).json({ 
+            success: false,
+            error: error.message 
+        });
     }
 };
 

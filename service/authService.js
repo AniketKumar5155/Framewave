@@ -15,16 +15,15 @@ const signupService = async ({ first_name, last_name, username, email, password,
     const redisKey = `signupOtp:${email}`;
     const storedOtp = await redisClient.get(redisKey);
     if (!storedOtp) throw new Error('OTP expired or not found.');
-    const isMatch = await verifyData(otp, storedOtp);
+
+    const isMatch = await verifyData(otp.toString(), storedOtp.toString());
     if (!isMatch) throw new Error('Invalid OTP.');
     await redisClient.del(redisKey);
 
     const existingUser = await User.findOne({
         where: { [Op.or]: [{ username }, { email }] }
     });
-    if (existingUser) {
-        throw new Error('User already exists.');
-    }
+    if (existingUser) throw new Error('User already exists.');
 
     const hashedPassword = await hashData(password);
     const newUser = await User.create({
@@ -41,17 +40,15 @@ const signupService = async ({ first_name, last_name, username, email, password,
         email: newUser.email,
     });
 
-    // const hashedRefreshToken = await hashData(refreshToken);
-
     await RefreshToken.create({
-        token: refreshToken,
+        token: refreshToken.toString(),
         user_id: newUser.id,
         ip_address: meta.ip,
         user_agent: meta.userAgent,
         location: meta.location,
         expires_at: new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS),
         is_valid: true,
-        last_used: new Date(Date.now())
+        last_used: new Date()
     });
 
     await AuthLog.create({
@@ -72,7 +69,7 @@ const signupService = async ({ first_name, last_name, username, email, password,
             username: newUser.username,
             email: newUser.email,
         },
-        token: { accessToken, refreshToken },
+        token: { accessToken: accessToken.toString(), refreshToken: refreshToken.toString() },
     };
 };
 
@@ -89,7 +86,7 @@ const loginService = async ({ identifier, password, subject, text, html }, meta)
     if (user.is_banned) throw new Error('Account is banned.');
     if (!user.is_active) throw new Error('Account is deactivated. Contact support.');
 
-    const isPasswordValid = await verifyData(password, user.password);
+    const isPasswordValid = await verifyData(password.toString(), user.password.toString());
     if (!isPasswordValid) throw new Error('Incorrect password.');
 
     if (!user.is_2fa_enabled) {
@@ -115,7 +112,7 @@ const loginService = async ({ identifier, password, subject, text, html }, meta)
 
 // ========================== VERIFY 2FA LOGIN ==========================
 const verify2FALoginService = async ({ email, otp }, meta) => {
-    await verify2FAOtpService({ email, otp });
+    await verify2FAOtpService({ email, otp: otp.toString() });
 
     const user = await User.findOne({ where: { email } });
     if (!user) throw new Error('User not found after OTP verification.');
@@ -131,17 +128,15 @@ const completeLogin = async (user, meta) => {
         email: user.email,
     });
 
-    // const hashedRefreshToken = await hashData(refreshToken);
-
     await RefreshToken.create({
-        token: refreshToken,
+        token: refreshToken.toString(),
         user_id: user.id,
         ip_address: meta.ip,
         user_agent: meta.userAgent,
         location: meta.location,
         expires_at: new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS),
         is_valid: true,
-        last_used: new Date(Date.now())
+        last_used: new Date()
     });
 
     await AuthLog.create({
@@ -155,8 +150,8 @@ const completeLogin = async (user, meta) => {
     return {
         success: true,
         message: 'Login successful.',
-        accessToken,
-        refreshToken,
+        accessToken: accessToken.toString(),
+        refreshToken: refreshToken.toString(),
         user: {
             id: user.id,
             username: user.username,
@@ -166,26 +161,17 @@ const completeLogin = async (user, meta) => {
 };
 
 // ========================== TOKEN ROTATION ==========================
-
 const refreshTokenRotationService = async (oldRefreshToken, meta) => {
-    if (!oldRefreshToken) {
-        throw new Error(`Refresh token not found`);
-    }
-
-    // console.log('Using secret:', process.env.SECRET_REFRESH_TOKEN);
-    // console.log('Old Refresh Token:', oldRefreshToken);
-
+    if (!oldRefreshToken) throw new Error(`Refresh token not found`);
 
     let payload;
     try {
-        payload = JWT.verify(oldRefreshToken, process.env.SECRET_REFRESH_TOKEN);
+        payload = JWT.verify(oldRefreshToken.toString(), process.env.SECRET_REFRESH_TOKEN);
     } catch (error) {
         console.error(error);
         throw new Error(`Invalid or expired refresh token`);
     }
 
-    console.log('Using secret:', process.env.SECRET_REFRESH_TOKEN);
-    console.log('Old Refresh Token:', oldRefreshToken);
     const { userId, username, email } = payload;
     const user = await User.findByPk(userId);
 
@@ -194,12 +180,9 @@ const refreshTokenRotationService = async (oldRefreshToken, meta) => {
     if (user.is_banned) throw new Error('Account is banned.');
     if (!user.is_active) throw new Error('Account is deactivated. Contact support.');
 
-
-    // const hashedOldRefreshToken = await hashData(oldRefreshToken);
-
     const tokenRecord = await RefreshToken.findOne({
         where: {
-            token: oldRefreshToken,
+            token: oldRefreshToken.toString(),
             user_id: userId,
             is_valid: true,
             revoked_at: null,
@@ -207,53 +190,17 @@ const refreshTokenRotationService = async (oldRefreshToken, meta) => {
         }
     });
 
-
-    // Consider removing logic and prevent mass logout
     if (!tokenRecord) {
-        // Possible token reuse or token revoked
-        // Revoke all tokens for this user for security
         await RefreshToken.update(
             { is_valid: false, revoked_at: new Date() },
-            {
-                where: {
-                    user_id: userId,
-                    is_valid: true,
-                }
-            }
+            { where: { user_id: userId, is_valid: true } }
         );
 
         await sendEmail({
             to: email,
             subject: 'Security Alert: Unusual Activity Detected on Your Account',
-            text: `
-Hello,
-
-We detected unusual activity with your account's refresh token, which may indicate unauthorized access attempts.
-
-For your protection, all active sessions have been logged out and tokens invalidated.
-
-What you need to do:
-- Log in again with your credentials.
-- Reset your password if you suspect it was compromised.
-- Enable 2FA for extra security.
-- Contact support if you did not initiate this activity.
-
-Thank you,
-InstaClone Security Team
-            `,
-            html: `
-<p>Hello,</p>
-<p>We detected <strong>unusual activity</strong> with your account's refresh token, which may indicate unauthorized access attempts.</p>
-<p>For your protection, all active sessions have been logged out and tokens invalidated.</p>
-<h4>What you need to do:</h4>
-<ul>
-  <li>Log in again with your credentials.</li>
-  <li>Reset your password if you suspect it was compromised.</li>
-  <li>Enable 2FA for extra security.</li>
-  <li>Contact support if you did not initiate this activity.</li>
-</ul>
-<p>Thank you,<br/>InstaClone Security Team</p>
-            `
+            text: `...`,
+            html: `...`
         });
 
         throw new Error('Refresh token reused or revoked. All tokens invalidated.');
@@ -264,23 +211,17 @@ InstaClone Security Team
     tokenRecord.last_used = new Date();
     await tokenRecord.save();
 
-    const { accessToken, refreshToken: newRefreshToken } = generateTokens({
-        userId,
-        username,
-        email,
-    });
-
-    // const hashedNewRefreshToken = await hashData(newRefreshToken);
+    const { accessToken, refreshToken: newRefreshToken } = generateTokens({ userId, username, email });
 
     await RefreshToken.create({
-        token: newRefreshToken,
+        token: newRefreshToken.toString(),
         user_id: userId,
         expires_at: new Date(Date.now() + REFRESH_TOKEN_EXPIRY_MS),
         is_valid: true,
         ip_address: meta.ip,
         user_agent: meta.userAgent,
         location: meta.location,
-        rotated_from: oldRefreshToken,
+        rotated_from: oldRefreshToken.toString(),
         last_used: new Date(),
     });
 
@@ -293,8 +234,36 @@ InstaClone Security Team
     });
 
     return {
-        accessToken,
-        refreshToken: newRefreshToken,
+        accessToken: accessToken.toString(),
+        refreshToken: newRefreshToken.toString(),
+    };
+};
+
+// ========================== LOGOUT ==========================
+const logoutService = async (refreshToken, meta) => {
+    if (!refreshToken) throw new Error('Refresh token is required for logout.');
+
+    const tokenRecord = await RefreshToken.findOne({
+        where: { token: refreshToken.toString(), is_valid: true },
+    });
+
+    if (!tokenRecord) throw new Error('Refresh token not found or already invalidated.');
+
+    tokenRecord.is_valid = false;
+    tokenRecord.revoked_at = new Date();
+    await tokenRecord.save();
+
+    await AuthLog.create({
+        user_id: tokenRecord.user_id,
+        action: 'logout',
+        ip_address: meta.ip,
+        user_agent: meta.userAgent,
+        location: meta.location,
+    });
+
+    return {
+        success: true,
+        message: 'Logout successful. Refresh token invalidated.',
     };
 };
 
@@ -303,4 +272,5 @@ module.exports = {
     loginService,
     verify2FALoginService,
     refreshTokenRotationService,
+    logoutService,
 };

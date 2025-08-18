@@ -7,13 +7,11 @@ const { User } = require('../models');
 const { Op } = require('sequelize');
 
 // ========================== SIGNUP OTP ==========================
-const sendOtpService = async ({ username, email }) => {
-    if (!username || !email) throw new Error("Username and email are required");
+const sendOtpService = async ({ email }) => {
+    if (!email) throw new Error("Email is required");
 
-    const existingUser = await User.findOne({
-        where: { [Op.or]: [{ username }, { email }] }
-    });
-    if (existingUser) throw new Error(`User already exists`);
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) throw new Error("An account already exists. Please login");
 
     const { otp, expiresAt } = generateOtp();
     const ttlInSeconds = Math.floor((expiresAt - Date.now()) / 1000);
@@ -22,20 +20,23 @@ const sendOtpService = async ({ username, email }) => {
 
     await redisClient.set(redisKey, hashedOtp, { EX: ttlInSeconds });
 
-    const subject = 'Verify your email for Instagram Clone signup';
-    const text = `Your OTP for verifying your email is: ${otp}`;
-    const html = `<p>Your OTP is <b>${otp}</b>. It will expire in 10 minutes.</p>`;
-
-    await sendEmail({ to: email, subject, text, html });
+    await sendEmail({
+        to: email,
+        subject: 'Verify your email for Instagram Clone signup',
+        text: `Your OTP for verifying your email is: ${otp}`,
+        html: `<p>Your OTP is <b>${otp}</b>. It will expire in 10 minutes.</p>`
+    });
 
     return {
         success: true,
         message: 'Signup OTP sent successfully.'
     };
-}
+};
 
 // ========================== 2FA LOGIN OTP ==========================
 const send2FAOtpService = async ({ username, email }) => {
+    if (!email || !username) throw new Error("Username and email are required");
+
     const { otp, expiresAt } = generateOtp();
     const ttlInSeconds = Math.floor((expiresAt - Date.now()) / 1000);
     const redisKey = `otp2FALogin:${email}`;
@@ -43,11 +44,12 @@ const send2FAOtpService = async ({ username, email }) => {
 
     await redisClient.set(redisKey, hashedOtp, { EX: ttlInSeconds });
 
-    const subject = 'Your 2FA Login OTP - InstaClone';
-    const text = `Hi ${username}, your OTP is ${otp}`;
-    const html = `<p>Hi ${username}, your OTP is <b>${otp}</b></p>`;
-
-    await sendEmail({ to: email, subject, text, html });
+    await sendEmail({
+        to: email,
+        subject: 'Your 2FA Login OTP - InstaClone',
+        text: `Hi ${username}, your OTP is ${otp}`,
+        html: `<p>Hi ${username}, your OTP is <b>${otp}</b>. It will expire in 10 minutes.</p>`
+    });
 
     return {
         success: true,
@@ -55,6 +57,7 @@ const send2FAOtpService = async ({ username, email }) => {
     };
 };
 
+// ========================== VERIFY 2FA OTP ==========================
 const verify2FAOtpService = async ({ email, otp }) => {
     const redisKey = `otp2FALogin:${email}`;
     const storedOtp = await redisClient.get(redisKey);
@@ -72,11 +75,11 @@ const verify2FAOtpService = async ({ email, otp }) => {
     };
 };
 
-// ---------- PASSWORD RESET OTP ----------
+// ========================== PASSWORD RESET OTP ==========================
 const sendOtpForPasswordReset = async ({ email }) => {
-    const user = await User.findOne({
-        where: { email }
-    });
+    if (!email) throw new Error("Email is required");
+
+    const user = await User.findOne({ where: { email } });
     if (!user) throw new Error('User not found');
 
     const { otp, expiresAt } = generateOtp();
@@ -86,10 +89,12 @@ const sendOtpForPasswordReset = async ({ email }) => {
 
     await redisClient.set(redisKey, hashedOtp, { EX: ttlInSeconds });
 
-    const subject = 'Password Reset Request - InstaClone';
-    const text = `Your password reset OTP is: ${otp}`;
-
-    await sendEmail({ to: email, subject, text, html: `<p>${text}</p>` });
+    await sendEmail({
+        to: email,
+        subject: 'Password Reset Request - InstaClone',
+        text: `Your password reset OTP is: ${otp}`,
+        html: `<p>Your password reset OTP is: <b>${otp}</b>. It will expire in 10 minutes.</p>`
+    });
 
     return {
         success: true,
@@ -101,5 +106,5 @@ module.exports = {
     sendOtpService,
     send2FAOtpService,
     verify2FAOtpService,
-    sendOtpForPasswordReset,
+    sendOtpForPasswordReset
 };

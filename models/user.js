@@ -3,11 +3,10 @@ const { Model, DataTypes } = require("sequelize");
 module.exports = (sequelize) => {
     class User extends Model {
         static associate(models) {
-
             User.hasMany(models.RefreshToken, {
                 foreignKey: 'user_id',
                 onDelete: 'CASCADE',
-            })
+            });
 
             User.hasMany(models.AuthLog, {
                 foreignKey: "user_id",
@@ -42,6 +41,14 @@ module.exports = (sequelize) => {
             password: {
                 type: DataTypes.STRING(60),
                 allowNull: false
+            },
+            bio: {
+                type: DataTypes.STRING(500),
+                allowNull: true
+            },
+            profile_image: {
+                type: DataTypes.STRING(500),
+                allowNull: true
             },
             is_2fa_enabled: {
                 type: DataTypes.BOOLEAN,

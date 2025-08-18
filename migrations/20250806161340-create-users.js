@@ -29,6 +29,14 @@ module.exports = {
         type: Sequelize.STRING(60),
         allowNull: false,
       },
+      bio: {
+        type: Sequelize.STRING(500),
+        allowNull: true,
+      },
+      profile_image: {
+        type: Sequelize.STRING(500),
+        allowNull: true,
+      },
       is_2fa_enabled: {
         type: Sequelize.BOOLEAN,
         defaultValue: true,
@@ -58,9 +66,7 @@ module.exports = {
       updated_at: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.literal(
-          'CURRENT_TIMESTAMP'
-        ),
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
       },
     });
 
