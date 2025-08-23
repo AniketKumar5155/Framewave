@@ -1,6 +1,7 @@
 const express = require('express')
 const {
-    resetPasswordController
+    resetPasswordController,
+    getAllUsersController
 } = require(`../controller/userController`)
 const authMiddleware = require('../middleware/authMiddleware')
 
@@ -12,8 +13,12 @@ userRoute.patch(
     resetPasswordController,
 )
 
-module.exports = {
-    userRoute
-}
+userRoute.get(
+    '/all-users',
+    authMiddleware,
+    getAllUsersController
+)
+
+module.exports = userRoute
 
 

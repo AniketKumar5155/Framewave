@@ -18,7 +18,7 @@ module.exports = {
         onUpdate: 'CASCADE',
       },
       token: {
-        type: Sequelize.STRING,
+        type: Sequelize.STRING(700),
         allowNull: false,
         unique: true,
       },
@@ -54,7 +54,7 @@ module.exports = {
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
       },
       rotated_from: {
-        type: Sequelize.STRING,
+        type: Sequelize.STRING(700),
         allowNull: true,
         unique: true,
       },

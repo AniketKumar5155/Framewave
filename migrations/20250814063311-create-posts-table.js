@@ -23,9 +23,13 @@ module.exports = {
         type: Sequelize.STRING(255),
         allowNull: true,
       },
-      caption: {
+      title: {
+        type: Sequelize.STRING(100),
+        allowNull: false,
+      },
+      content: {
         type: Sequelize.TEXT,
-        allowNull: true,
+        allowNull: false,
       },
       is_deleted: {
         type: Sequelize.BOOLEAN,
@@ -36,6 +40,16 @@ module.exports = {
         type: Sequelize.BOOLEAN,
         allowNull: false,
         defaultValue: false,
+      },
+      like_count: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      comment_count: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
       },
       created_at: {
         type: Sequelize.DATE,

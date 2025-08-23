@@ -5,7 +5,7 @@ const generateTokens = ({ userId, email, username }) => {
     const payload = { userId, email, username }
 
     const accessToken = JWT.sign(payload, process.env.SECRET_ACCESS_TOKEN, {
-        expiresIn: '10s',
+        expiresIn: '15m', // I was putting 10s
         issuer: 'insta-clone'
     })
     const refreshToken = JWT.sign(payload, process.env.SECRET_REFRESH_TOKEN, {

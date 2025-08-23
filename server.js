@@ -10,8 +10,9 @@ const trimmer = require('./utils/trimmer');
 
 const { connectRedis } = require('./config/redisClient');
 const e = require('express');
-const { userRoute } = require('./route/userRoute');
+const userRoute = require('./route/userRoute');
 const profileRoute = require('./route/profileRoute');
+const followRoute = require('./route/followRoute');
 
 const allowedOrigins = [
   'http://localhost:5173',
@@ -52,6 +53,7 @@ async function startServer() {
     app.use('/otp', otpRoute);
     app.use('/user', userRoute);
     app.use('/auth/profile', profileRoute)
+    app.use('/api', followRoute)
     // app.use(trimmer);
     app.use(errorHandlerMiddleware);
     app.use(notFoundMiddleware);

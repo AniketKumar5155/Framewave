@@ -14,7 +14,7 @@ const resetPasswordService = async ({ email, newPassword, otp }) => {
     const isOtpMatch = await verifyData(otp, storedOtp);
     if (!isOtpMatch) throw new Error('Invalid OTP.');
     await redisClient.del(redisKey);
-    
+
     const user = await User.findOne({
         where: { email }
     })
@@ -42,6 +42,20 @@ const resetPasswordService = async ({ email, newPassword, otp }) => {
     }
 }
 
+const getAllUsersService = async () => {
+    const users = await User.findAll({
+        where: {
+            is_deleted: false,
+            is_banned: false,
+            is_active: true,
+        },
+        attributes: ['id', 'username', 'email', 'first_name', 'last_name', 'is_active', 'is_banned', 'is_deleted']
+    });
+
+    return users;
+};
+
 module.exports = {
     resetPasswordService,
+    getAllUsersService,
 }

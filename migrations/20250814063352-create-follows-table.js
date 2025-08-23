@@ -1,6 +1,5 @@
 'use strict';
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('follows', {
@@ -17,12 +16,20 @@ module.exports = {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
       },
+      follower_username: {
+        type: Sequelize.STRING(50),
+        allowNull: false,
+      },
       following_id: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: { model: 'users', key: 'id' },
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
+      },
+      following_username: {
+        type: Sequelize.STRING(50),
+        allowNull: false,
       },
       created_at: {
         type: Sequelize.DATE,
@@ -40,14 +47,9 @@ module.exports = {
       unique: true,
       name: 'follower_following_unique_index',
     });
-    await queryInterface.addIndex('follows', ['following_id'], {
-      name: 'following_index',
-    });
   },
-
-
 
   async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('follows');
-  }
+  },
 };

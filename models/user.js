@@ -12,6 +12,20 @@ module.exports = (sequelize) => {
                 foreignKey: "user_id",
                 onDelete: "CASCADE",
             });
+
+            // A user can follow many other users (follower role)
+            User.hasMany(models.Follow, {
+                foreignKey: "follower_id",
+                as: "Following",   // users that this user follows
+                onDelete: "CASCADE",
+            });
+
+            // A user can be followed by many users (following role)
+            User.hasMany(models.Follow, {
+                foreignKey: "following_id",
+                as: "Followers",   // users that follow this user
+                onDelete: "CASCADE",
+            });
         }
     }
 

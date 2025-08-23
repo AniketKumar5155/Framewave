@@ -24,7 +24,7 @@ module.exports = (sequelize) => {
         allowNull: false,
       },
       token: {
-        type: DataTypes.STRING,
+        type: DataTypes.STRING(700),
         allowNull: false,
         unique: true,
       },
@@ -49,9 +49,8 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING,
         allowNull: true,
       },
-
       rotated_from: {
-        type: DataTypes.STRING,
+        type: DataTypes.STRING(700),
         allowNull: true,
         unique: true,
       },
