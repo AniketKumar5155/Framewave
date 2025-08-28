@@ -16,7 +16,6 @@ const getProfileService = async (username) => {
 };
 
 const updateProfileService = async (username, updatedProfileData) => {
-  console.log("updateProfileData: ", updatedProfileData)
   const user = await User.findOne({
     where: {
       username

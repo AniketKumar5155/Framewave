@@ -13,6 +13,7 @@ const e = require('express');
 const userRoute = require('./route/userRoute');
 const profileRoute = require('./route/profileRoute');
 const followRoute = require('./route/followRoute');
+const postRoute = require('./route/postRoute');
 
 const allowedOrigins = [
   'http://localhost:5173',
@@ -52,8 +53,9 @@ async function startServer() {
     app.use('/auth', authRoute);
     app.use('/otp', otpRoute);
     app.use('/user', userRoute);
-    app.use('/auth/profile', profileRoute)
-    app.use('/api', followRoute)
+    app.use('/profile', profileRoute);
+    app.use('/api', followRoute);
+    app.use('/post', postRoute);
     // app.use(trimmer);
     app.use(errorHandlerMiddleware);
     app.use(notFoundMiddleware);
